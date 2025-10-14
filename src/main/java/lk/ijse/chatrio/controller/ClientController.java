@@ -3,10 +3,7 @@ package lk.ijse.chatrio.controller;
 import javafx.application.Platform;
 import javafx.fxml.Initializable;
 import javafx.geometry.Pos;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
@@ -29,6 +26,7 @@ public class ClientController implements Initializable {
 
     private Socket socket;
     private DataOutputStream dOS;
+    private DataInputStream dIS;
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -36,14 +34,27 @@ public class ClientController implements Initializable {
             try {
                 socket = new Socket("localhost", 3000);
                 dOS = new DataOutputStream(socket.getOutputStream());
-                DataInputStream dIS = new DataInputStream(socket.getInputStream());
+                dIS = new DataInputStream((socket.getInputStream()));
 
-                while (true) {
-                    String message = dIS.readUTF();
-                    Platform.runLater(() -> displayMsg(message, "server"));
+                String msg = "";
+                while ((msg = dIS.readUTF()) != null) {
+                    String finalMsg = msg;
+                    Platform.runLater(() -> displayMsg(finalMsg, "server"));
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                if (!socket.isClosed()) {
+                    Platform.runLater(()->{
+                        new Alert(Alert.AlertType.INFORMATION, "The connection has been closed.");
+                    });
+                }
+            } finally {
+                try {
+                    if (dOS != null) dOS.close();
+                    if (dIS != null) dIS.close();
+                    if (socket != null && !socket.isClosed()) socket.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         }).start();
     }
