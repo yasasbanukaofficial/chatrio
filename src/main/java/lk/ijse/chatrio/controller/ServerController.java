@@ -3,10 +3,7 @@ package lk.ijse.chatrio.controller;
 import javafx.application.Platform;
 import javafx.fxml.Initializable;
 import javafx.geometry.Pos;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
@@ -30,6 +27,7 @@ public class ServerController implements Initializable {
 
     private Socket socket;
     private DataOutputStream dOS;
+    private DataInputStream dIS;
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -37,14 +35,25 @@ public class ServerController implements Initializable {
             try (ServerSocket serverSocket = new ServerSocket(3000)) {
                 socket = serverSocket.accept();
                 dOS = new DataOutputStream(socket.getOutputStream());
-                DataInputStream dIS = new DataInputStream(socket.getInputStream());
+                dIS = new DataInputStream(socket.getInputStream());
 
-                while (true) {
-                    String message = dIS.readUTF();
-                    Platform.runLater(() -> displayMsg(message, "client"));
+                while (!socket.isClosed()) {
+                    String msg = dIS.readUTF();
+                    Platform.runLater(() -> displayMsg(msg, "client"));
                 }
             } catch (IOException e) {
+                if (!socket.isClosed()) {
+                    Platform.runLater(() -> displayMsg("Client Disconnected", "sys"));
+                }
                 e.printStackTrace();
+            } finally {
+                try {
+                    if (dIS != null) dIS.close();
+                    if (dOS != null) dOS.close();
+                    if (socket != null && !socket.isClosed()) socket.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         }).start();
     }
@@ -67,7 +76,7 @@ public class ServerController implements Initializable {
         msg.setWrapText(true);
         msg.setStyle("-fx-background-color: #4a90e2; -fx-text-fill: white; -fx-padding: 8 12; -fx-background-radius: 15;");
         bubble.getChildren().add(msg);
-        bubble.setAlignment(sender.equalsIgnoreCase("client") ? Pos.BASELINE_LEFT : Pos.BASELINE_RIGHT);
+        bubble.setAlignment(sender.equalsIgnoreCase("client") ? Pos.BASELINE_RIGHT : sender.equalsIgnoreCase("server") ? Pos.BASELINE_LEFT : Pos.BASELINE_CENTER);
         chatDisplay.getChildren().add(bubble);
     }
 

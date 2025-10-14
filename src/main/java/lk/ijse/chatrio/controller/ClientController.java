@@ -36,16 +36,13 @@ public class ClientController implements Initializable {
                 dOS = new DataOutputStream(socket.getOutputStream());
                 dIS = new DataInputStream((socket.getInputStream()));
 
-                String msg = "";
-                while ((msg = dIS.readUTF()) != null) {
-                    String finalMsg = msg;
-                    Platform.runLater(() -> displayMsg(finalMsg, "server"));
+                while (!socket.isClosed()) {
+                    String msg = dIS.readUTF();
+                    Platform.runLater(() -> displayMsg(msg, "server"));
                 }
             } catch (IOException e) {
                 if (!socket.isClosed()) {
-                    Platform.runLater(()->{
-                        new Alert(Alert.AlertType.INFORMATION, "The connection has been closed.");
-                    });
+                    Platform.runLater(() -> displayMsg("Server Disconnected", "sys"));
                 }
             } finally {
                 try {
@@ -77,7 +74,7 @@ public class ClientController implements Initializable {
         msg.setWrapText(true);
         msg.setStyle("-fx-background-color: #4a90e2; -fx-text-fill: white; -fx-padding: 8 12; -fx-background-radius: 15;");
         bubble.getChildren().add(msg);
-        bubble.setAlignment(sender.equalsIgnoreCase("client") ? Pos.BASELINE_RIGHT : Pos.BASELINE_LEFT);
+        bubble.setAlignment(sender.equalsIgnoreCase("client") ? Pos.BASELINE_RIGHT : sender.equalsIgnoreCase("server") ? Pos.BASELINE_LEFT : Pos.BASELINE_CENTER);
         chatDisplay.getChildren().add(bubble);
     }
 
