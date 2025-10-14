@@ -3,6 +3,7 @@ package lk.ijse.chatrio.controller;
 import javafx.application.Platform;
 import javafx.fxml.Initializable;
 import javafx.geometry.Pos;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
@@ -25,6 +26,7 @@ public class ServerController implements Initializable {
     public TextField msgInput;
     public ImageView sendBtn;
     public VBox chatDisplay;
+    public Button endBtn;
 
     private Socket socket;
     private DataOutputStream dOS;
@@ -67,5 +69,13 @@ public class ServerController implements Initializable {
         bubble.getChildren().add(msg);
         bubble.setAlignment(sender.equalsIgnoreCase("client") ? Pos.BASELINE_LEFT : Pos.BASELINE_RIGHT);
         chatDisplay.getChildren().add(bubble);
+    }
+
+    public void endSession(MouseEvent mouseEvent) {
+        try {
+            socket.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
