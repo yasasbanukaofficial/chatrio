@@ -47,7 +47,7 @@ public class ServerController implements Initializable {
                         byte[] imageBytes=new byte[length];
                         dIS.readFully(imageBytes);
                         ByteArrayInputStream bais = new ByteArrayInputStream(imageBytes);
-                        Platform.runLater(() ->  displayImg(bais));
+                        Platform.runLater(() ->  displayImg(bais, "client"));
                     } else {
                         Platform.runLater(() -> displayMsg(msg, "client"));
                     }
@@ -90,8 +90,8 @@ public class ServerController implements Initializable {
         bubble.setAlignment(sender.equalsIgnoreCase("client") ? Pos.BASELINE_LEFT : sender.equalsIgnoreCase("server") ? Pos.BASELINE_RIGHT : Pos.BASELINE_CENTER);
         chatDisplay.getChildren().add(bubble);
     }
-    
-    private void displayImg(ByteArrayInputStream fileContent){
+
+    private void displayImg(ByteArrayInputStream fileContent, String sender){
         HBox imageContainer = new HBox();
         Image img = new Image(fileContent);
         ImageView imageView = new ImageView();
@@ -100,7 +100,11 @@ public class ServerController implements Initializable {
         imageView.setFitWidth(200);
         imageView.setPreserveRatio(true);
         imageContainer.getChildren().add(imageView);
-        imageContainer.setAlignment(Pos.BASELINE_LEFT);
+        if (sender.equalsIgnoreCase("client")) {
+            imageContainer.setAlignment(Pos.BASELINE_LEFT);
+        } else {
+            imageContainer.setAlignment(Pos.BASELINE_RIGHT);
+        }
         imageContainer.setStyle("-fx-padding: 10;");
         chatDisplay.getChildren().add(imageContainer);
     }
@@ -117,8 +121,9 @@ public class ServerController implements Initializable {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Select Image");
         File selectedFile = fileChooser.showOpenDialog(new Stage());
+        byte [] fileContent;
         try {
-            byte [] fileContent = Files.readAllBytes(selectedFile.toPath());
+            fileContent = Files.readAllBytes(selectedFile.toPath());
             dOS = new DataOutputStream(socket.getOutputStream());
             dOS.writeUTF("IMAGE");
             dOS.writeInt(fileContent.length);
@@ -127,6 +132,9 @@ public class ServerController implements Initializable {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-
+        Platform.runLater(() -> {
+            ByteArrayInputStream bais = new ByteArrayInputStream(fileContent);
+            displayImg(bais, "server");
+        });
     }
 }
