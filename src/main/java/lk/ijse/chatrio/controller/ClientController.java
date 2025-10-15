@@ -4,16 +4,18 @@ import javafx.application.Platform;
 import javafx.fxml.Initializable;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.stage.FileChooser;
+import javafx.stage.Stage;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.Socket;
 import java.net.URL;
+import java.nio.file.Files;
 import java.util.ResourceBundle;
 
 public class ClientController implements Initializable {
@@ -38,7 +40,15 @@ public class ClientController implements Initializable {
 
                 while (!socket.isClosed()) {
                     String msg = dIS.readUTF();
-                    Platform.runLater(() -> displayMsg(msg, "server"));
+                    if (msg.equals("IMAGE")) {
+                        int length= dIS.readInt();
+                        byte[] imageBytes=new byte[length];
+                        dIS.readFully(imageBytes);
+                        ByteArrayInputStream bais = new ByteArrayInputStream(imageBytes);
+                        Platform.runLater(() ->  displayImg(bais));
+                    }else {
+                        Platform.runLater(() -> displayMsg(msg, "client"));
+                    }
                 }
             } catch (IOException e) {
                 if (!socket.isClosed()) {
@@ -78,9 +88,39 @@ public class ClientController implements Initializable {
         chatDisplay.getChildren().add(bubble);
     }
 
+    private void displayImg(ByteArrayInputStream fileContent){
+        HBox imageContainer = new HBox();
+        Image img = new Image(fileContent);
+        ImageView imageView = new ImageView();
+        imageView.setImage(img);
+        imageView.setFitHeight(200);
+        imageView.setFitWidth(200);
+        imageView.setPreserveRatio(true);
+        imageContainer.getChildren().add(imageView);
+        imageContainer.setAlignment(Pos.BASELINE_LEFT);
+        imageContainer.setStyle("-fx-padding: 10;");
+        chatDisplay.getChildren().add(imageContainer);
+    }
+
     public void endSession(MouseEvent mouseEvent) {
         try {
             socket.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void addImg(MouseEvent mouseEvent) {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Select Image");
+        File selectedFile = fileChooser.showOpenDialog(new Stage());
+        try {
+            byte [] fileContent = Files.readAllBytes(selectedFile.toPath());
+            dOS = new DataOutputStream(socket.getOutputStream());
+            dOS.writeUTF("IMAGE");
+            dOS.writeInt(fileContent.length);
+            dOS.write(fileContent);
+            dOS.flush();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
