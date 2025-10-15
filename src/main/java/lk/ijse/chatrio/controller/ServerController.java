@@ -76,7 +76,7 @@ public class ServerController implements Initializable {
         msg.setWrapText(true);
         msg.setStyle("-fx-background-color: #4a90e2; -fx-text-fill: white; -fx-padding: 8 12; -fx-background-radius: 15;");
         bubble.getChildren().add(msg);
-        bubble.setAlignment(sender.equalsIgnoreCase("client") ? Pos.BASELINE_RIGHT : sender.equalsIgnoreCase("server") ? Pos.BASELINE_LEFT : Pos.BASELINE_CENTER);
+        bubble.setAlignment(sender.equalsIgnoreCase("client") ? Pos.BASELINE_LEFT : sender.equalsIgnoreCase("server") ? Pos.BASELINE_RIGHT : Pos.BASELINE_CENTER);
         chatDisplay.getChildren().add(bubble);
     }
 
