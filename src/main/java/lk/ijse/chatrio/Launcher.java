@@ -8,7 +8,7 @@ import javafx.stage.Stage;
 
 import java.util.Objects;
 
-public class Launcher extends Application{
+public class Launcher extends Application {
     public static void main(String[] args) {
         launch(args);
     }
