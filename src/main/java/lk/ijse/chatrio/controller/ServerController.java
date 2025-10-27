@@ -4,17 +4,19 @@ import javafx.application.Platform;
 import javafx.fxml.Initializable;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.stage.FileChooser;
+import javafx.stage.Stage;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URL;
+import java.nio.file.Files;
 import java.util.ResourceBundle;
 
 public class ServerController implements Initializable {
@@ -38,7 +40,6 @@ public class ServerController implements Initializable {
                 while (running) {
                     Socket clientSocket = serverSocket.accept();
                     Platform.runLater(() -> displayMsg("Client Connected", "sys"));
-
                     new Thread(() -> handleClient(clientSocket)).start();
                 }
             } catch (IOException e) {
@@ -64,7 +65,15 @@ public class ServerController implements Initializable {
             dIS = new DataInputStream(socket.getInputStream());
             while (!socket.isClosed()) {
                 String msg = dIS.readUTF();
-                Platform.runLater(() -> displayMsg(msg, "client"));
+                if (msg.equalsIgnoreCase("IMAGE")) {
+                    int length = dIS.readInt();
+                    byte [] imageBytes = new byte[length];
+                    dIS.readFully(imageBytes);
+                    ByteArrayInputStream bais = new ByteArrayInputStream(imageBytes);
+                    Platform.runLater(() -> displayImg(bais, "client"));
+                } else {
+                    Platform.runLater(() -> displayMsg(msg, "client"));
+                }
             }
         } catch (IOException e) {
             Platform.runLater(() -> displayMsg("Client Disconnected", "sys"));
@@ -95,6 +104,44 @@ public class ServerController implements Initializable {
         bubble.getChildren().add(msg);
         bubble.setAlignment(sender.equalsIgnoreCase("client") ? Pos.BASELINE_LEFT : sender.equalsIgnoreCase("server") ? Pos.BASELINE_RIGHT : Pos.BASELINE_CENTER);
         chatDisplay.getChildren().add(bubble);
+    }
+
+    private void displayImg(ByteArrayInputStream fileContent, String sender){
+        HBox imageContainer = new HBox();
+        Image img = new Image(fileContent);
+        ImageView imageView = new ImageView();
+        imageView.setImage(img);
+        imageView.setFitHeight(200);
+        imageView.setFitWidth(200);
+        imageView.setPreserveRatio(true);
+        imageContainer.getChildren().add(imageView);
+        if (sender.equalsIgnoreCase("client")) {
+            imageContainer.setAlignment(Pos.BASELINE_LEFT);
+        } else {
+            imageContainer.setAlignment(Pos.BASELINE_RIGHT);
+        }
+        imageContainer.setStyle("-fx-padding: 10;");
+        chatDisplay.getChildren().add(imageContainer);
+    }
+
+    public void addImg(MouseEvent mouseEvent) {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Select Image");
+        File selectedFile = fileChooser.showOpenDialog(new Stage());
+        byte [] fileContent;
+        try {
+            fileContent = Files.readAllBytes(selectedFile.toPath());
+            dOS.writeUTF("IMAGE");
+            dOS.writeInt(fileContent.length);
+            dOS.write(fileContent);
+            dOS.flush();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        Platform.runLater(() -> {
+            ByteArrayInputStream bais = new ByteArrayInputStream(fileContent);
+            displayImg(bais, "server");
+        });
     }
 
     public void endSession(MouseEvent mouseEvent) {
